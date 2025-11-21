@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import javax.net.ssl.SSLContext;
+import jakarta.annotation.PostConstruct;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 
@@ -29,26 +30,9 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     @Bean
     public MongoClient mongoClient() {
         try {
-            ConnectionString connectionString = new ConnectionString(mongoUri);
-
-            // Enforce TLS 1.2
-            SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-            sslContext.init(null, null, null);
-
-            MongoClientSettings settings = MongoClientSettings.builder()
-                    .applyConnectionString(connectionString)
-                    .applyToSslSettings(builder -> {
-                        builder.enabled(true)
-                                .context(sslContext)
-                                .invalidHostNameAllowed(true); // Temporarily allow invalid hostnames to rule out SNI
-                                                               // issues
-                    })
-                    .applyToSocketSettings(builder -> builder.connectTimeout(30, TimeUnit.SECONDS)
-                            .readTimeout(30, TimeUnit.SECONDS))
-                    .applyToClusterSettings(builder -> builder.serverSelectionTimeout(30, TimeUnit.SECONDS))
-                    .build();
-
-            return MongoClients.create(settings);
+            // Use simple creation to match TestMongoDriver.java which worked
+            System.out.println("Creating MongoClient with URI: " + mongoUri);
+            return MongoClients.create(mongoUri);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create MongoDB client", e);
         }
@@ -57,5 +41,18 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     @Bean
     public MongoTemplate mongoTemplate() {
         return new MongoTemplate(mongoClient(), getDatabaseName());
+    }
+
+    @PostConstruct
+    public void testConnection() {
+        try {
+            System.out.println("Testing MongoDB connection...");
+            MongoClient client = mongoClient();
+            client.getDatabase(getDatabaseName()).listCollectionNames().first();
+            System.out.println("MongoDB connection test PASSED!");
+        } catch (Exception e) {
+            System.err.println("MongoDB connection test FAILED: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
