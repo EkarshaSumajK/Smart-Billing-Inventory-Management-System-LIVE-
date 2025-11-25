@@ -29,8 +29,8 @@ public class SecurityConfig {
     private final CustomOAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter,
-                          @Lazy UserService userService,
-                          CustomOAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
+            @Lazy UserService userService,
+            CustomOAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userService = userService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
@@ -42,23 +42,25 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
-                        .requestMatchers("/api/auth/**", "/error", "/static/**", "/", "/index.html", "/favicon.ico", "/login/oauth2/**", "/oauth2/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/error", "/static/**", "/", "/index.html", "/favicon.ico",
+                                "/login/oauth2/**", "/oauth2/**")
+                        .permitAll()
                         .requestMatchers("/api/bills/{billId}/pdf").permitAll()
 
                         // Allow anyone to GET product images
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/image/**").permitAll()
 
                         // This rule now correctly secures the other product endpoints
-                        .requestMatchers("/api/products/**", "/api/bills/**").hasAnyRole("MANAGER","OWNER")
+                        .requestMatchers("/api/products/**", "/api/bills/**").hasAnyRole("MANAGER", "OWNER")
 
                         // --- ADD THIS LINE ---
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/customers/send-email").hasAnyRole("MANAGER", "OWNER")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/customers/send-email")
+                        .hasAnyRole("MANAGER", "OWNER")
 
                         .requestMatchers("/api/customers/**").hasAnyRole("MANAGER", "CASHIER", "OWNER")
                         .requestMatchers("/api/reports/**").hasAnyRole("MANAGER", "OWNER")
                         .requestMatchers("/api/users/**").hasRole("OWNER")
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -76,7 +78,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("https://your-vercel-app.vercel.app", "http://localhost:3000", "http://localhost:5173", "http://localhost:8080"));
+        configuration.setAllowedOrigins(Arrays.asList("https://smart-billing-inventory-management.vercel.app",
+                "http://localhost:3000", "http://localhost:5173", "http://localhost:8080"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept-Language"));
         configuration.setAllowCredentials(true);
@@ -86,7 +89,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 }
